@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RestController
 import java.time.Duration
+import java.util.Optional
 
 @RestController
 class DemoController(@Qualifier("rateLimitRedisTemplate") private val rt: RedisTemplate<String, Int>) {
@@ -15,18 +16,18 @@ class DemoController(@Qualifier("rateLimitRedisTemplate") private val rt: RedisT
     private val logger by lazy { LoggerFactory.getLogger(DemoController::class.java.simpleName) }
 
     @GetMapping("/products")
-    fun retrieveProducts(@RequestHeader(name = "api-key", required = true) apiKey: String): ResponseEntity<List<Product>> {
+    fun retrieveProducts(@RequestHeader(name = "api-key", required = true) apiKey: String): ResponseEntity<String> {
 
         val currentValue = tryGetKey(apiKey)
 
         if (currentValue == null) {
             trySet(apiKey)
-        } else if (currentValue < 2) {
+        } else if (currentValue < 1) {
             tryIncrement(apiKey)
         } else {
-            return ResponseEntity.status(429).build()
+            return ResponseEntity.status(429).body("429")
         }
-        return ResponseEntity.ok(null)
+        return ResponseEntity.status(200).body("200")
     }
 
     fun trySet(key: String) {
